@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis tareas</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 32px 16px;
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #f4f4f5;
+      background: #0f1117;
+      background-image: radial-gradient(circle at top right, #1e1b4b, #0f1117);
+    }
+
+    main {
+      width: min(100%, 520px);
+      margin: 0 auto;
+      padding: 24px;
+      background: #1b1e26;
+      border: 1px solid #303441;
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    h1 { 
+      margin: 0 0 6px; 
+      background: linear-gradient(to right, #a855f7, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 2rem;
+    }
+    p { margin: 0 0 22px; color: #a5a9b5; }
+
+    form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      padding: 12px;
+      color: inherit;
+      background: #111318;
+      border: 2px solid #393e4b;
+      border-radius: 12px;
+      font: inherit;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #6c63ff;
+      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+    }
+
+    button {
+      padding: 10px 18px;
+      color: white;
+      background: linear-gradient(135deg, #6c63ff, #4b45d1);
+      border: 0;
+      border-radius: 12px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    button:hover { 
+      filter: brightness(1.15); 
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(108, 99, 255, 0.3);
+    }
+
+    button:active { 
+      transform: scale(0.95); 
+    }
+
+    ul { padding: 0; margin: 0; list-style: none; }
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid #303441;
+      transition: background 0.2s;
+      border-radius: 12px;
+    }
+
+    li:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    li span { flex: 1; overflow-wrap: anywhere; font-size: 1.05rem; }
+    li.done span { color: #6b7280; text-decoration: line-through; }
+
+    /* Checkbox personalizado */
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #6c63ff;
+      cursor: pointer;
+    }
+
+    .delete {
+      padding: 7px 12px;
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      font-size: 0.85rem;
+    }
+
+    .delete:hover {
+      box-shadow: 0 6px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    #empty { 
+      color: #a5a9b5; 
+      text-align: center; 
+      margin-top: 20px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Mis tareas</h1>
+    <p>Organiza lo que tienes pendiente.</p>
+
+    <form id="task-form">
+      <input id="task-input" type="text" placeholder="Escribe una tarea..." required>
+      <button type="submit">Añadir</button>
+    </form>
+
+    <ul id="task-list"></ul>
+    <div id="empty">Todavía no tienes tareas.</div>
+  </main>
+
+  <script>
+    const form = document.querySelector("#task-form");
+    const input = document.querySelector("#task-input");
+    const list = document.querySelector("#task-list");
+    const emptyMessage = document.querySelector("#empty");
+
+    let tasks = JSON.parse(localStorage.getItem("mis-tareas") || "[]");
+
+    function saveTasks() {
+      localStorage.setItem("mis-tareas", JSON.stringify(tasks));
+    }
+
+    function renderTasks() {
+      list.replaceChildren();
+      emptyMessage.hidden = tasks.length > 0;
+
+      tasks.forEach((task, index) => {
+        const item = document.createElement("li");
+        if (task.done) item.classList.add("done");
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = task.done;
+        checkbox.setAttribute("aria-label", "Marcar tarea como completada");
+        checkbox.addEventListener("change", () => {
+          tasks[index].done = checkbox.checked;
+          saveTasks();
+          renderTasks();
+        });
+
+        const text = document.createElement("span");
+        text.textContent = task.text;
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "delete";
+        deleteButton.textContent = "Borrar";
+        deleteButton.addEventListener("click", () => {
+          tasks.splice(index, 1);
+          saveTasks();
+          renderTasks();
+        });
+
+        item.append(checkbox, text, deleteButton);
+        list.append(item);
+      });
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+
+      tasks.push({ text, done: false });
+      saveTasks();
+      renderTasks();
+      form.reset();
+      input.focus();
+    });
+
+    renderTasks();
+  </script>
+</body>
+</html>
